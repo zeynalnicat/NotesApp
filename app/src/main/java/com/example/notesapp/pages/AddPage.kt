@@ -158,11 +158,15 @@ fun update(
     } else {
         CoroutineScope(Dispatchers.IO).launch {
             roomDb.noteDao().update(noteEntity)
-            navController.navigate("home") {
-                popUpTo("home") {
-                    inclusive = true
+
+            CoroutineScope(Dispatchers.Main).launch{
+                navController.navigate("home") {
+                    popUpTo("home") {
+                        inclusive = true
+                    }
                 }
             }
+
 
         }
 
