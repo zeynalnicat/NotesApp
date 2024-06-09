@@ -13,36 +13,34 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
-
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.notesapp.CustomCard
 import com.example.notesapp.R
 import com.example.notesapp.db.RoomDb
-import com.example.notesapp.db.dao.NoteDao
 import com.example.notesapp.db.entites.NoteEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +48,7 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun AddNote(navController: NavController,noteId: Int) {
+fun AddNote(navController: NavController, noteId: Int) {
     val roomDb = RoomDb.getInstance(LocalContext.current)
     val title = remember {
         mutableStateOf("")
@@ -61,15 +59,13 @@ fun AddNote(navController: NavController,noteId: Int) {
     }
 
     LaunchedEffect(noteId) {
-        if(noteId!=-1){
-            val note = roomDb?.noteDao()?.getNote(noteId)
-            title.value = note?.title ?: ""
-            content.value = note?.content ?: ""
+        if (noteId != -1) {
+            getNote(roomDb!!, noteId, title, content)
+        } else {
+            title.value = ""
+            content.value = ""
         }
-
     }
-
-
 
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -89,12 +85,44 @@ fun AddNote(navController: NavController,noteId: Int) {
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     CustomCard(icon = Icons.Filled.ArrowBackIosNew,
                         { navController.navigate("home") { popUpTo("home") { inclusive = true } } })
 
-                    CustomCard(icon = Icons.Filled.Save, {save(roomDb = roomDb!!, navController = navController, title = title.value, content = content.value, snackbarHostState)})
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CustomCard(
+                            icon = Icons.Filled.Save,
+                            {
+                                if (noteId == -1) {
+                                    save(
+                                        roomDb = roomDb!!,
+                                        navController = navController,
+                                        title = title.value,
+                                        content = content.value,
+                                        snackbarHostState
+                                    )
+                                } else {
+                                    update(
+                                        roomDb!!,
+                                        NoteEntity(noteId, title.value, content.value),
+                                        snackbarHostState,
+                                        navController
+                                    )
+
+                                }
+                            })
+                        if (noteId != -1) {
+                            CustomCard(icon = Icons.Filled.Delete,{ delete(roomDb!!,navController,
+                                NoteEntity(noteId,title.value,content.value)
+                            ) })
+                        }
+
+                    }
+
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
@@ -113,8 +141,59 @@ fun AddNote(navController: NavController,noteId: Int) {
     }
 }
 
+fun update(
+    roomDb: RoomDb,
+    noteEntity: NoteEntity,
+    snackbarHostState: SnackbarHostState,
+    navController: NavController
+) {
 
-fun save(roomDb: RoomDb ,navController: NavController,title:String,content:String,snackbarHostState:SnackbarHostState){
+    if (noteEntity.title.isEmpty() || noteEntity.content.isEmpty()) {
+
+        CoroutineScope(Dispatchers.Main).launch {
+            snackbarHostState.showSnackbar("Please fill all the fields")
+        }
+
+
+    } else {
+        CoroutineScope(Dispatchers.IO).launch {
+            roomDb.noteDao().update(noteEntity)
+            navController.navigate("home") {
+                popUpTo("home") {
+                    inclusive = true
+                }
+            }
+
+        }
+
+
+    }
+
+}
+
+
+fun delete(roomDb: RoomDb,navController: NavController,noteEntity: NoteEntity) {
+    CoroutineScope(Dispatchers.IO).launch {
+        roomDb.noteDao().delete(noteEntity)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            navController.navigate("home") {
+                popUpTo("home") {
+                    inclusive = true
+                }
+            }
+        }
+    }
+}
+
+
+fun save(
+    roomDb: RoomDb,
+    navController: NavController,
+    title: String,
+    content: String,
+    snackbarHostState: SnackbarHostState
+) {
     val dao = roomDb.noteDao()
 
     if (title.isEmpty() || content.isEmpty()) {
@@ -126,12 +205,12 @@ fun save(roomDb: RoomDb ,navController: NavController,title:String,content:Strin
     } else {
 
         CoroutineScope(Dispatchers.IO).launch {
-            val insert = dao.insert(NoteEntity(id=0,title = title, content = content))
-            if(insert!=-1L){
+            val insert = dao.insert(NoteEntity(id = 0, title = title, content = content))
+            if (insert != -1L) {
                 CoroutineScope(Dispatchers.Main).launch {
                     navController.navigate("home") { popUpTo("home") { inclusive = true } }
                 }
-            }else{
+            } else {
                 snackbarHostState.showSnackbar("Something went wrong")
             }
 
@@ -176,6 +255,22 @@ fun TransparentBorderTextField(
             )
             .padding(horizontal = 10.dp)
     )
+}
+
+fun getNote(
+    roomDb: RoomDb,
+    noteId: Int,
+    title: MutableState<String>,
+    content: MutableState<String>,
+) {
+    val noteDao = roomDb.noteDao()
+
+
+    CoroutineScope(Dispatchers.IO).launch {
+        val note = noteDao.getNote(noteId)
+        title.value = note.title
+        content.value = note.content
+    }
 }
 
 @Composable

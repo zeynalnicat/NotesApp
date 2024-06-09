@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -52,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -82,8 +84,8 @@ fun NavigationHost(navController: NavHostController) {
         }
 
         composable("add/{note}") { backStackEntry ->
-            val note = backStackEntry.arguments?.getInt("note") ?: -1
-            AddNote(navController, note)
+            val note = backStackEntry.arguments?.getString("note") ?: "-1"
+            AddNote(navController, note.toInt())
 
 
         }
@@ -103,12 +105,12 @@ fun Home(navController: NavHostController) {
     LaunchedEffect(Unit) {
         notes.value = dao?.getAllNotes() ?: emptyList()
     }
-    val noteEntity = NoteEntity(-1, "", "")
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 modifier = Modifier.size(width = 70.dp, height = 70.dp),
-                onClick = { navController.navigate("add/${noteEntity.id}") },
+                onClick = { navController.navigate("add/${-1}") },
                 shape = RoundedCornerShape(35.dp),
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 14.dp),
                 containerColor = colorResource(id = R.color.primary),
@@ -151,9 +153,9 @@ fun Home(navController: NavHostController) {
                     ) {
                         OutlinedTextField(
                             shape = RoundedCornerShape(20.dp),
-                            placeholder = { Text(text = "Search in notes")},
+                            placeholder = { Text(text = "Search in notes") },
                             value = search.value,
-                            onValueChange = {search.value=it},
+                            onValueChange = { search.value = it },
 
                             )
                         CustomCard(icon = Icons.Filled.Search, { isSet.value = !isSet.value })
@@ -201,7 +203,8 @@ fun Home(navController: NavHostController) {
                                     .height(100.dp)
                                     .clickable {
                                         navController.navigate("add/${notes.value[index].id}")
-                                    },
+                                    }
+                                    ,
                                 shape = RoundedCornerShape(8.dp),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color(color = color))
