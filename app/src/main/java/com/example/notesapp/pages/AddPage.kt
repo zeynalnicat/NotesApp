@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -239,7 +240,7 @@ fun TransparentBorderTextField(
             fontSize = (if (isTitle) 35.sp else 20.sp)
         ),
         onValueChange = { textValue.value = it },
-        placeholder = { Text(text = placeHolder, fontSize = (if (isTitle) 35.sp else 20.sp)) },
+        placeholder = { Text(text = placeHolder, fontSize = (if (isTitle) 35.sp else 20.sp), fontWeight = FontWeight(600)) },
         colors = TextFieldDefaults.outlinedTextFieldColors(
             focusedTextColor = Color.White,
             focusedBorderColor = Color.Transparent,
@@ -281,7 +282,7 @@ fun getNote(
 fun ShowSnackbar(snackbarHostState: SnackbarHostState) {
     SnackbarHost(
         hostState = snackbarHostState,
-        modifier = Modifier.padding(16.dp) // Adjust padding as needed
+        modifier = Modifier.padding(16.dp)
     ) { snackbarData ->
         Snackbar(snackbarData = snackbarData)
     }
